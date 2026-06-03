@@ -111,7 +111,6 @@ ticket-booking-system/
 │   └── main.cpp          # Full application source
 ├── docs/
 │   └── proposal.md       # Original project proposal
-├── screenshots/          # Sample output screenshots
 └── README.md
 ```
 
@@ -144,5 +143,14 @@ added by admin      bookings after      here until            bookings on
 - Input validation and stream recovery
 
 ---
+## Team Members
 
+| Name | Student ID |
+|---|---|
+| M. Nihaas Bhatti | F2024266196 |
+| Saim Ullah | F2024266594 |
+| Salik Saeed | F2024266596 |
+| Daniyal Gurchani | F2024266570 |
+
+---
 **Instructor:** Muhammad Rizwan — Data Structures Lab, V1, SST, UMT
