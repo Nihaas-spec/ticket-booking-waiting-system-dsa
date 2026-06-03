@@ -76,6 +76,7 @@ Movie* getMovie(Movie* head, string title) {
 
 // Show seat map
 void showSeatMap(Movie* m) {
+    cout << "\n--- Seat Map ---\n";
     for (int i = 0; i < 20; i++) {
         cout << (m->bookedSeats[i] ? "[X] " : "[" + to_string(i+1) + "] ");
         if ((i+1) % 5 == 0) cout << endl;
@@ -110,8 +111,9 @@ void displayBooked(Customer* head) {
     if (!head) { cout << "No customers booked yet.\n"; return; }
     Customer* temp = head;
     cout << "\n--- Booked Customers ---\n";
+    int i = 1;
     while (temp) {
-        cout << temp->name << " | " << temp->bookedMovie->title << endl;
+        cout << i++ << ". " << temp->name << " | " << temp->bookedMovie->title << endl;
         temp = temp->next;
     }
 }
@@ -165,9 +167,10 @@ QueueNode* dequeue() {
 void displayQueue() {
     if (!front) { cout << "Waiting line is empty.\n"; return; }
     QueueNode* temp = front;
-    cout << "\n--- Waiting Line ---\n";
+    cout << "\n--- Waiting Line (FIFO) ---\n";
+    int i = 1;
     while (temp) {
-        cout << temp->name << " | " << temp->requestedMovie->title << endl;
+        cout << i++ << ". " << temp->name << " | " << temp->requestedMovie->title << endl;
         temp = temp->next;
     }
 }
@@ -190,9 +193,10 @@ void push(string name, Movie* m) {
 void displayStack() {
     if (!top) { cout << "No recent bookings.\n"; return; }
     StackNode* temp = top;
-    cout << "\n--- Recent Bookings (Last Served First) ---\n";
+    cout << "\n--- Recent Bookings (LIFO - Last Served First) ---\n";
+    int i = 1;
     while (temp) {
-        cout << temp->name << " | " << temp->bookedMovie->title << endl;
+        cout << i++ << ". " << temp->name << " | " << temp->bookedMovie->title << endl;
         temp = temp->next;
     }
 }
@@ -201,90 +205,150 @@ void displayStack() {
 int main() {
     Movie* movies = nullptr;          
     Customer* bookedList = nullptr;   
+    // Reset global queue and stack pointers
+    front = rear = nullptr;
+    top = nullptr;
 
     int choice;
     do {
-        cout << "\n--- Ticket Booking System ---\n";
+        cout << "\n=====================================\n";
+        cout << "     Ticket Booking System\n";
+        cout << "=====================================\n";
         cout << "1. Admin Panel\n2. Customer Panel\n3. Exit\nChoice: ";
         cin >> choice;
         if (cin.fail()) { clearInput(); cout << "Invalid input.\n"; continue; }
 
+        // ---------- Admin Panel with Password ----------
         if (choice == 1) {
+            string pass;
+            cout << "Enter Admin Password: ";
+            cin >> pass;
+            clearInput();
+            
+            if (pass != "umt101") {
+                cout << "Access denied. Incorrect password.\n";
+                continue;
+            }
+            
             int a;
             do {
                 cout << "\n--- Admin Panel ---\n";
                 cout << "1. Add Movie\n2. Remove Movie\n3. View Movies\n4. Back\nChoice: ";
                 cin >> a;
                 if (cin.fail()) { clearInput(); cout << "Invalid input.\n"; continue; }
-
+                
                 cin.ignore();
                 string title;
                 if (a == 1) {
-                    cout << "Enter movie title: "; getline(cin, title);
+                    cout << "Enter movie title: "; 
+                    getline(cin, title);
                     if (!title.empty()) movies = insertMovie(movies, title);
+                    else cout << "Title cannot be empty.\n";
                 }
                 else if (a == 2) {
-                    cout << "Enter movie title to remove: "; getline(cin, title);
+                    cout << "Enter movie title to remove: "; 
+                    getline(cin, title);
                     if (!title.empty()) movies = removeMovie(movies, title);
+                    else cout << "Title cannot be empty.\n";
                 }
                 else if (a == 3) displayMovies(movies);
-
+                
             } while (a != 4);
         }
+        // ---------- Customer Panel ----------
         else if (choice == 2) {
             int c;
             do {
                 cout << "\n--- Customer Panel ---\n";
-                cout << "1. View Movies\n2. Join Waiting Line\n3. Issue Ticket\n4. Show Booked Customers\n5. Show Waiting Line\n6. Show Recent Bookings\n7. Back\nChoice: ";
+                cout << "1. View Movies\n";
+                cout << "2. Join Waiting Line\n";
+                cout << "3. Issue Ticket (Next in Line)\n";
+                cout << "4. Show Booked Customers\n";
+                cout << "5. Show Waiting Line\n";
+                cout << "6. Show Recent Bookings\n";
+                cout << "7. Cancel Booking\n";
+                cout << "8. Back\nChoice: ";
                 cin >> c;
                 if (cin.fail()) { clearInput(); cout << "Invalid input.\n"; continue; }
-
+                
                 cin.ignore();
                 string name, title;
-
-                if (c == 1) displayMovies(movies);
+                
+                if (c == 1) {
+                    displayMovies(movies);
+                }
                 else if (c == 2) {
-                    cout << "Enter your name: "; getline(cin, name);
-                    cout << "Enter movie title: "; getline(cin, title);
+                    if (!movies) { cout << "No movies available. Please check back later.\n"; continue; }
+                    cout << "Enter your name: "; 
+                    getline(cin, name);
+                    cout << "Enter movie title: "; 
+                    getline(cin, title);
                     Movie* m = getMovie(movies, title);
                     if (m) enqueue(name, m);
                     else cout << "Movie not found.\n";
                 }
                 else if (c == 3) {
                     QueueNode* nextCustomer = dequeue();
-                    if (!nextCustomer) { cout << "No one in waiting line.\n"; continue; }
+                    if (!nextCustomer) { 
+                        cout << "No one in waiting line.\n"; 
+                        continue; 
+                    }
                     Movie* m = nextCustomer->requestedMovie;
                     int available = 0;
                     for (int i = 0; i < 20; i++) if (!m->bookedSeats[i]) available++;
-                    if (available == 0) { cout << "No seats left.\n"; delete nextCustomer; continue; }
-
+                    
+                    if (available == 0) { 
+                        cout << "No seats available for " << m->title << ". Customer moved to back of queue.\n";
+                        enqueue(nextCustomer->name, m);
+                        delete nextCustomer;
+                        continue; 
+                    }
+                    
                     int ticketCount;
-                    cout << nextCustomer->name << ", how many tickets? (Available: " << available << "): ";
+                    cout << "\n" << nextCustomer->name << ", how many tickets would you like to book? (Available: " << available << "): ";
                     cin >> ticketCount;
-                    if (cin.fail() || ticketCount <= 0 || ticketCount > available) { clearInput(); cout << "Invalid count.\n"; delete nextCustomer; continue; }
-
+                    
+                    if (cin.fail() || ticketCount <= 0 || ticketCount > available) { 
+                        clearInput(); 
+                        cout << "Invalid ticket count.\n";
+                        enqueue(nextCustomer->name, m);
+                        delete nextCustomer;
+                        continue; 
+                    }
+                    
                     for (int i = 0; i < ticketCount; i++) {
                         int seat;
                         showSeatMap(m);
-                        cout << "Select seat #" << i+1 << ": ";
+                        cout << "Select seat #" << i+1 << " (1-20): ";
                         cin >> seat;
-                        if (!bookSeat(m, seat)) i--;
+                        if (cin.fail() || !bookSeat(m, seat)) {
+                            clearInput();
+                            cout << "Invalid or already booked seat. Try again.\n";
+                            i--;
+                        } else {
+                            cout << "Seat " << seat << " booked successfully.\n";
+                        }
                     }
-
+                    
                     bookedList = insertCustomer(bookedList, nextCustomer->name, m);
                     push(nextCustomer->name, m);
-                    cout << ticketCount << " ticket(s) booked for " << nextCustomer->name << ".\n";
+                    cout << "\n✓ " << ticketCount << " ticket(s) booked successfully for " << nextCustomer->name << " (" << m->title << ")\n";
                     delete nextCustomer;
                 }
                 else if (c == 4) displayBooked(bookedList);
                 else if (c == 5) displayQueue();
                 else if (c == 6) displayStack();
-
-            } while (c != 7);
+                else if (c == 7) {
+                    cout << "Enter your name to cancel booking: ";
+                    getline(cin, name);
+                    bookedList = cancelBooking(bookedList, name);
+                }
+                
+            } while (c != 8);
         }
-
+        
     } while (choice != 3);
-
-    cout << "Thank you for using Ticket Booking System!\n";
+    
+    cout << "\nThank you for using the Ticket Booking System!\n";
     return 0;
 }
